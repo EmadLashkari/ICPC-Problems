@@ -174,4 +174,268 @@ Tip: Comprehensions are concise and often faster.
 
 ```python
 nums = [1, 2, 3, 4, 5]
-squares = [x*x for x in nums if x % 2 == 1]  # [1, 
+squares = [x*x for x in nums if x % 2 == 1]  # [1, 9, 25]
+```
+
+### Local vs. Global Variables
+
+Problem: Tight loops accessing globals.
+Tip: Bind frequently used names to locals.
+
+```python
+def compute(arr):
+    total = 0
+    append = arr.append  # local binding example
+    for i in range(5):
+        append(i)
+    return sum(arr)
+```
+
+### Minimize repeated function calls in loops
+
+Problem: Calling len() repeatedly.
+Tip: Hoist invariants.
+
+```python
+words = ["a"] * 1000000
+n = len(words)
+i = 0
+while i < n:
+    i += 1
+```
+
+## 5. Handling Large Datasets and Avoiding Timeouts
+
+### Algorithm first
+
+Problem: Two-sum existence.
+Tip: Use a set in O(n) instead of O(n^2).
+
+```python
+def has_pair_sum(nums, k):
+    seen = set()
+    for x in nums:
+        if k - x in seen:
+            return True
+        seen.add(x)
+    return False
+```
+
+### Generators and streaming
+
+Problem: Process a huge file without loading it all.
+Tip: Iterate line-by-line.
+
+```python
+def process_large_file(path):
+    with open(path, 'r') as f:
+        for line in f:
+            yield line.strip().upper()
+```
+
+### Memory-conscious patterns
+
+Problem: Large accumulations.
+Tip: Avoid building huge intermediate lists; prefer iterators.
+
+```python
+# Sum of integers from stdin tokens without constructing a list
+import sys
+tokens = sys.stdin.read().split()
+total = 0
+for t in tokens:
+    total += int(t)
+print(total)
+```
+
+## 6. Python-Specific Tips and Tricks
+
+### Recursion depth
+
+Problem: Deep DFS recursion.
+Tip: Increase limit or convert to iterative.
+
+```python
+import sys
+sys.setrecursionlimit(1_000_000)
+
+# Iterative DFS template
+def dfs(start, adj):
+    stack, seen = [start], {start}
+    while stack:
+        u = stack.pop()
+        for v in adj[u]:
+            if v not in seen:
+                seen.add(v)
+                stack.append(v)
+```
+
+### Arbitrary-precision integers
+
+Problem: Large powers/modular arithmetic.
+Tip: Use pow with mod for speed.
+
+```python
+# Fast modular exponentiation
+a, b, m = 2, 10**9, 1_000_000_007
+print(pow(a, b, m))
+```
+
+### Efficient string building
+
+Problem: Many concatenations.
+Tip: Use join on list of chunks.
+
+```python
+chunks = []
+for i in range(5):
+    chunks.append(str(i))
+s = "".join(chunks)
+```
+
+## 7. Contest-Useful Batteries Included
+
+### Sorting tips
+
+```python
+# Sort by multiple keys: primary ascending, secondary descending
+arr = [(3, 5), (3, 2), (1, 9)]
+arr.sort(key=lambda x: (x[0], -x[1]))  # [(1,9), (3,5), (3,2)]
+```
+
+### Binary search (bisect)
+
+```python
+import bisect
+a = [1, 3, 3, 5, 7]
+i = bisect.bisect_left(a, 3)   # 1
+j = bisect.bisect_right(a, 3)  # 3
+count_of_3 = j - i             # 2
+```
+
+### Prefix sums and differences
+
+```python
+# Prefix sums
+arr = [1, 2, 3, 4]
+pref = [0]
+for x in arr:
+    pref.append(pref[-1] + x)
+# sum of arr[l:r] = pref[r] - pref[l]
+
+# Difference array for range increments
+n = 5
+diff = [0]*(n+1)
+# add +v to [l, r)
+l, r, v = 1, 4, 2
+diff[l] += v
+diff[r] -= v
+# build back
+a = [0]*n
+cur = 0
+for i in range(n):
+    cur += diff[i]
+    a[i] = cur
+```
+
+### Graph templates
+
+```python
+# Build adjacency list
+n, m = 5, 4
+edges = [(0,1), (1,2), (2,3), (3,4)]
+adj = [[] for _ in range(n)]
+for u, v in edges:
+    adj[u].append(v)
+    adj[v].append(u)  # remove if directed
+
+# BFS
+from collections import deque
+def bfs(src):
+    dist = [-1]*n
+    dist[src] = 0
+    dq = deque([src])
+    while dq:
+        u = dq.popleft()
+        for v in adj[u]:
+            if dist[v] == -1:
+                dist[v] = dist[u] + 1
+                dq.append(v)
+    return dist
+```
+
+### Dijkstra (with heapq)
+
+```python
+import heapq
+def dijkstra(n, adj, src):
+    INF = 10**18
+    dist = [INF]*n
+    dist[src] = 0
+    pq = [(0, src)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in adj[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist
+```
+
+### Disjoint Set Union (Union-Find)
+
+```python
+class DSU:
+    def __init__(self, n):
+        self.p = list(range(n))
+        self.r = [0]*n
+    def find(self, x):
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]
+            x = self.p[x]
+        return x
+    def union(self, a, b):
+        a, b = self.find(a), self.find(b)
+        if a == b: return False
+        if self.r[a] < self.r[b]:
+            a, b = b, a
+        self.p[b] = a
+        if self.r[a] == self.r[b]:
+            self.r[a] += 1
+        return True
+```
+
+### Math helpers
+
+```python
+import math
+# gcd/lcm
+g = math.gcd(24, 36)                 # 12
+l = 24 // g * 36                     # 72
+# combinations modulo prime with pow
+MOD = 1_000_000_007
+def modinv(x): return pow(x, MOD-2, MOD)
+```
+
+### Coordinate compression
+
+```python
+a = [100, 500, 100, -10]
+vals = sorted(set(a))          # [-10, 100, 500]
+rank = {v:i for i, v in enumerate(vals)}
+comp = [rank[x] for x in a]    # [1, 2, 1, 0]
+```
+
+## 8. Practical Checklist
+
+- Read constraints; pick algorithms with correct complexity.
+- Use fast I/O patterns for large inputs.
+- Prefer set/dict/heapq/deque appropriately.
+- Avoid deep recursion; prefer iterative.
+- Use PyPy if allowed for speed.
+- Hoist invariants; minimize per-iteration overhead.
+- Batch outputs and string building.
+- Test on provided samples; add edge cases.
